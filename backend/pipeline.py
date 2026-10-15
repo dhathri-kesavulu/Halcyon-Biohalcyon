@@ -37,6 +37,8 @@ from backend.report import (
     generate_json_report,
     generate_markdown_report,
     generate_csv_report,
+    generate_pdf_report,
+    HAS_REPORTLAB,
     DISCLAIMER_TEXT,
     LIMITATIONS_TEXT,
 )
@@ -189,10 +191,16 @@ def analyze_genome(
     }
 
     # 8. Attach pre-rendered export reports
-    result_payload["reports"] = {
+    reports: dict[str, Any] = {
         "json": generate_json_report(result_payload),
         "markdown": generate_markdown_report(result_payload),
         "csv": generate_csv_report(result_payload),
     }
+    if HAS_REPORTLAB:
+        try:
+            reports["pdf"] = generate_pdf_report(result_payload)
+        except Exception:
+            reports["pdf"] = None
+    result_payload["reports"] = reports
 
     return result_payload

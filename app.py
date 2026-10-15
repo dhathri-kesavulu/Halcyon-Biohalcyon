@@ -13,6 +13,7 @@ import csv
 import io
 import json
 import os
+import re
 import tempfile
 from typing import Any, Dict, List, Optional
 
@@ -20,6 +21,7 @@ import streamlit as st
 
 # Strict integration contract: only import analyze_genome from backend.pipeline
 from backend.pipeline import analyze_genome
+from backend.report import generate_pdf_report
 
 
 st.set_page_config(
@@ -216,6 +218,8 @@ if analyze_btn:
     elif not active_fasta_path or not os.path.isfile(active_fasta_path):
         st.error("Validation Error: Please upload a FASTA sequence file (.fasta, .fa, .fna) or select a benchmark isolate.")
     else:
+        # Prevent stale analysis and reports on new run or error
+        st.session_state["latest_analysis"] = None
         with st.spinner("Processing genome assembly, computing QC metrics, and applying explicit resistance rules..."):
             try:
                 raw_organism = organism_input.strip() if organism_input else None
@@ -224,8 +228,13 @@ if analyze_btn:
                     sample_id=clean_sample_id,
                     organism=raw_organism,
                 )
-                st.session_state["latest_analysis"] = analysis_output
-                st.session_state["analyzed_sample_id"] = clean_sample_id
+                if analysis_output.get("status") == "FAILED":
+                    errs = analysis_output.get("errors", [])
+                    st.error(f"Analysis Failed: {', '.join(errs) if errs else 'Unknown execution error'}")
+                    st.session_state["latest_analysis"] = None
+                else:
+                    st.session_state["latest_analysis"] = analysis_output
+                    st.session_state["analyzed_sample_id"] = clean_sample_id
             except Exception as exc:
                 st.error(f"Unexpected Backend Error during analysis: {str(exc)}")
                 st.session_state["latest_analysis"] = None
@@ -379,17 +388,49 @@ if st.session_state.get("latest_analysis"):
         else:
             st.write("No acquired AMR determinants detected in this assembly.")
 
-    # 9. Download Generated JSON Report and CSV Summary
+    # 9. Download Generated PDF Report, JSON Audit Trail, and CSV Summary
     st.markdown("---")
     st.subheader("5. Auditable Export & Downloads")
+
+    safe_sample_id = re.sub(r"[^a-zA-Z0-9_\-]", "_", str(sample_id))
+
+    # Primary: PDF Report Download
+    pdf_bytes = None
+    pdf_err_msg = None
+    try:
+        if "reports" in result and isinstance(result["reports"], dict) and result["reports"].get("pdf"):
+            pdf_bytes = result["reports"]["pdf"]
+        else:
+            pdf_bytes = generate_pdf_report(result)
+    except Exception as exc:
+        pdf_err_msg = str(exc)
+
+    if pdf_bytes:
+        st.download_button(
+            label="📄 Download Report (PDF)",
+            data=pdf_bytes,
+            file_name=f"GF_{safe_sample_id}_report.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True,
+            help="Download comprehensive clinical & audit resistance report as an auditable multi-page PDF document.",
+        )
+    else:
+        warn_txt = pdf_err_msg or "PDF generation library unavailable."
+        st.warning(f"PDF report could not be generated: {warn_txt}")
+
+    st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
     dl_col1, dl_col2 = st.columns(2)
 
-    # 1. JSON Report
-    json_data = json.dumps(result, indent=2)
+    # 1. JSON Report (redact binary pdf if present in reports)
+    clean_result_json = dict(result)
+    if "reports" in clean_result_json and isinstance(clean_result_json["reports"], dict):
+        clean_result_json["reports"] = {k: v for k, v in clean_result_json["reports"].items() if k != "pdf"}
+    json_data = json.dumps(clean_result_json, indent=2, ensure_ascii=False)
     dl_col1.download_button(
         label="📥 Download JSON Report",
         data=json_data,
-        file_name=f"genome_firewall_{sample_id}.json",
+        file_name=f"GF_{safe_sample_id}_audit.json",
         mime="application/json",
         use_container_width=True,
     )
@@ -399,7 +440,7 @@ if st.session_state.get("latest_analysis"):
     dl_col2.download_button(
         label="📥 Download CSV Summary",
         data=csv_data,
-        file_name=f"genome_firewall_{sample_id}_summary.csv",
+        file_name=f"GF_{safe_sample_id}_summary.csv",
         mime="text/csv",
         use_container_width=True,
     )

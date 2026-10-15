@@ -63,7 +63,7 @@ Halcyon/
 │   ├── genome.py              # Biopython FASTA parser, QC metrics, GC%, and input validation
 │   ├── detector.py            # AMRFinderPlus engine verification, safe subprocess, and demo fixtures
 │   ├── interpreter.py         # Auditable rulebook (v1.0.0) mapping hits to tripartite status with citations
-│   └── report.py              # Provenance tracking, UTF-8 sanitized JSON, Markdown, and CSV generators
+│   └── report.py              # Provenance tracking, UTF-8 sanitized JSON, Markdown, CSV, and PDF generators
 ├── data/
 │   └── demo/                  # Benchmark assemblies, fixtures, and catalog.json
 ├── tests/
@@ -71,9 +71,11 @@ Halcyon/
 │   ├── test_detector.py       # Engine verification, unavailable status, TSV parsing, and demo mode tests
 │   ├── test_interpreter.py    # Strict 3-state output, citations, and conflict handling tests
 │   ├── test_report.py         # JSON, CSV, and Markdown audit report generation tests
-│   └── test_pipeline.py       # End-to-end contract, unavailable fallback, and schema consistency tests
+│   ├── test_pdf_report.py     # PDF signature, text extraction, tripartite statuses, and multi-page pagination tests
+│   ├── test_pipeline.py       # End-to-end contract, unavailable fallback, and schema consistency tests
+│   └── test_integration.py    # Multi-isolate benchmark and live custom upload integration tests
 ├── pytest.ini                 # Pytest configuration
-├── requirements.txt           # Minimal core dependencies
+├── requirements.txt           # Minimal core dependencies (including reportlab and pypdf)
 └── README.md                  # Comprehensive backend documentation
 ```
 
@@ -86,13 +88,13 @@ Halcyon/
 pip install -r requirements.txt
 ```
 
-### 2. Run the Full Backend Test Suite
-Run all 30 unit and integration tests across the 5 test suites:
+### 2. Run the Full Test Suite
+Run all 46 unit and integration tests across the test suites:
 ```bash
 python -m pytest -v tests
 ```
 
-### 3. Launch the Web Interface (Optional)
+### 3. Launch the Web Interface
 ```bash
 streamlit run app.py
 ```
