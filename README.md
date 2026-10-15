@@ -1,18 +1,18 @@
-# 🛡️ Genome Firewall
+# Biohalcyon Genome Firewall
 
 > **Bacterial Genome Resistance-Evidence Analysis Prototype**  
 > *A transparent, audited antimicrobial resistance (AMR) genomic interpretation backend and provenance tracking engine.*
 
 ---
 
-## ⚠️ Regulatory & Clinical Disclaimer
+##  Regulatory & Clinical Disclaimer
 
 **RESEARCH USE ONLY.**  
 Genome Firewall is a prototype developed for hackathon demonstration and exploratory bioinformatics research. It has **NOT** undergone clinical validation or regulatory clearance (FDA, CE-IVD) and **DOES NOT REPLACE** standardized clinical laboratory phenotypic Antimicrobial Susceptibility Testing (AST) such as broth microdilution, disk diffusion, or ETEST. All predictions are algorithmic interpretations of assembled genomic sequences and must never be used to direct clinical patient care or therapy selection.
 
 ---
 
-## 🎯 Backend Architectural Principles & Guarantees
+##  Backend Architectural Principles & Guarantees
 
 1. **Strict Tripartite Classification**:
    Every evaluated antibiotic strictly receives one of three statuses:
@@ -52,7 +52,7 @@ Genome Firewall is a prototype developed for hackathon demonstration and explora
 
 ---
 
-## 📂 Repository Structure
+##  Repository Structure
 
 ```
 Halcyon/
@@ -79,7 +79,7 @@ Halcyon/
 
 ---
 
-## 🚀 Running Tests & Execution
+##  Running Tests & Execution
 
 ### 1. Install Dependencies
 ```bash
@@ -99,7 +99,7 @@ streamlit run app.py
 
 ---
 
-## 📊 Result Schema Specification
+##  Result Schema Specification
 
 The `analyze_genome` function returns a standardized dictionary:
 
@@ -173,7 +173,7 @@ The `analyze_genome` function returns a standardized dictionary:
 
 ---
 
-## 📜 Auditable Rules Catalog Summary (v1.0.0)
+##  Auditable Rules Catalog Summary (v1.0.0)
 
 | Rule ID | Antibiotic / Drug Class | Target Determinants | Evidence Threshold | Citations | Status Assigned |
 | :--- | :--- | :--- | :--- | :--- | :--- |
