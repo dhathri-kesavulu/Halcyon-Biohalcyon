@@ -51,7 +51,9 @@ def _build_fallback_interpretations(rationale_msg: str) -> list[dict[str, Any]]:
             "drug_class": drug["class"],
             "status": "Indeterminate",
             "rationale": rationale_msg,
+            "confidence_or_criteria": rationale_msg,
             "evidence": ["No detector evidence available"],
+            "evidence_genes": [],
             "rule_id": "RULE-INDET-001",
             "citations": [CITATIONS["CLSI_M100"]],
         })
@@ -152,17 +154,38 @@ def analyze_genome(
         mode_label=detection_res.get("mode_label", "Unknown Mode"),
     )
 
+    # Normalize detection fields for contig_id/sequence_name and coordinates
+    for d in detections:
+        seq = d.get("sequence_name") or d.get("contig_id") or "contig_01"
+        d["sequence_name"] = seq
+        d["contig_id"] = seq
+        d["start"] = d.get("start", 0)
+        d["stop"] = d.get("stop", 0)
+        d["strand"] = d.get("strand", "+")
+
+    # Compatibility aliases in genome_metrics
+    genome_metrics["total_length_bp"] = genome_metrics.get("total_length", 0)
+    genome_metrics["n50_bp"] = genome_metrics.get("n50", 0)
+    genome_metrics["min_length_bp"] = genome_metrics.get("min_length", 0)
+    genome_metrics["max_length_bp"] = genome_metrics.get("max_length", 0)
+
     result_payload: dict[str, Any] = {
+        "sample_id": sample_id,
+        "organism": organism or "Not specified",
         "status": execution_status,
         "errors": errors,
+        "analysis_errors": errors,
         "warnings": list(genome_metrics.get("warnings", [])),
         "provenance": provenance,
         "genome_metrics": genome_metrics,
         "detections": detections,
+        "detected_evidence": detections,
         "interpretations": interpretations,
+        "interpretation": interpretations,
         "summary": summary,
         "limitations": LIMITATIONS_TEXT.split("\n"),
         "disclaimer": DISCLAIMER_TEXT,
+        "disclaimers": [DISCLAIMER_TEXT] + LIMITATIONS_TEXT.split("\n"),
     }
 
     # 8. Attach pre-rendered export reports

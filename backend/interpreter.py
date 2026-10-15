@@ -562,12 +562,21 @@ def interpret_evidence(
             f"Invalid status '{status}' generated for antibiotic '{drug_name}'"
         )
 
+        # Extract concise gene identifiers for evidence_genes list
+        evidence_genes = []
+        for ev in evidence_list:
+            token = ev.split()[0].strip(",;")
+            if token and token not in ["Zero", "No", "Species", "Gram-negative", "Intrinsic"]:
+                evidence_genes.append(token)
+
         interpretations.append({
             "antibiotic": drug_name,
             "drug_class": drug_class,
             "status": status,
             "rationale": rationale,
+            "confidence_or_criteria": rationale,
             "evidence": evidence_list,
+            "evidence_genes": evidence_genes,
             "rule_id": rule_id,
             "citations": rule_citations,
         })

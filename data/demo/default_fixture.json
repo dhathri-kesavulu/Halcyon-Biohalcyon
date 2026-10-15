@@ -1,0 +1,21 @@
+{
+  "engine": "AMRFinderPlus (Demonstration Reference Fixture)",
+  "engine_version": "3.12.8-fixture",
+  "database_version": "2024-05-02.1-ref",
+  "is_live_analysis": false,
+  "provenance_notes": "Generic bacterial AMR reference demonstration fixture. Not live output.",
+  "detected_evidence": [
+    {
+      "gene_symbol": "blaTEM-1",
+      "element_type": "AMR",
+      "class": "BETA-LACTAM",
+      "subclass": "PENICILLIN",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_01",
+      "start": 1000,
+      "stop": 1860,
+      "strand": "+"
+    }
+  ]
+}

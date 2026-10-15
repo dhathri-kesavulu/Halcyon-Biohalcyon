@@ -1,443 +1,417 @@
-"""Genome Firewall: Browser-based Bacterial Genome Resistance-Evidence Analysis Prototype.
+"""
+Genome Firewall - Streamlit Frontend Application.
+Title: Genome Firewall — Evidence-Based Antibiotic Resistance Analysis.
 
-Frontend implementation using Streamlit.
-Strict constraint: The frontend calls only the public function:
-`analyze_genome(fasta_path, sample_id, organism=None) -> dict`
-from `backend.pipeline`.
+Integration Contract:
+Imports and calls exclusively:
+  from backend.pipeline import analyze_genome
 """
 
+from __future__ import annotations
+
+import csv
+import io
 import json
 import os
 import tempfile
-import pandas as pd
+from typing import Any, Dict, List, Optional
+
 import streamlit as st
 
-# Strictly import ONLY the agreed public contract function from backend.pipeline
+# Strict integration contract: only import analyze_genome from backend.pipeline
 from backend.pipeline import analyze_genome
 
+
 st.set_page_config(
-    page_title="Genome Firewall | AMR Analysis",
-    page_icon="🛡️",
+    page_title="Genome Firewall — Evidence-Based Antibiotic Resistance Analysis",
+    page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for rich aesthetics and clear status badges
+# Plain, functional CSS for status distinctions and audit badges (no flashy animations)
 st.markdown(
     """
     <style>
-    .main-header {
-        font-size: 2.3rem;
-        font-weight: 800;
-        color: #1E293B;
-        margin-bottom: 0.2rem;
-    }
-    .sub-header {
-        font-size: 1.1rem;
-        color: #64748B;
-        margin-bottom: 1.5rem;
-    }
-    .disclaimer-box {
-        background-color: #FEF2F2;
-        border-left: 5px solid #EF4444;
-        padding: 1rem 1.2rem;
-        border-radius: 6px;
-        color: #991B1B;
-        font-size: 0.95rem;
-        margin-bottom: 1.5rem;
-    }
-    .mode-fixture-box {
-        background-color: #FFFBEB;
-        border-left: 5px solid #F59E0B;
-        padding: 0.9rem 1.2rem;
-        border-radius: 6px;
-        color: #92400E;
-        font-size: 0.92rem;
-        margin-bottom: 1.5rem;
-    }
-    .mode-live-box {
-        background-color: #ECFDF5;
-        border-left: 5px solid #10B981;
-        padding: 0.9rem 1.2rem;
-        border-radius: 6px;
-        color: #065F46;
-        font-size: 0.92rem;
-        margin-bottom: 1.5rem;
-    }
-    .kpi-card {
-        background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 1rem;
-        text-align: center;
-    }
-    .status-resistant {
-        background-color: #FEE2E2;
-        color: #991B1B;
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        font-weight: 600;
-        font-size: 0.85rem;
+    .status-badge-resistant {
         display: inline-block;
-    }
-    .status-susceptible {
-        background-color: #DCFCE7;
-        color: #166534;
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        display: inline-block;
-    }
-    .status-indeterminate {
-        background-color: #FEF3C7;
-        color: #92400E;
-        padding: 0.25rem 0.6rem;
-        border-radius: 9999px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        display: inline-block;
-    }
-    .prov-code {
-        font-family: monospace;
-        background-color: #F1F5F9;
-        padding: 0.2rem 0.4rem;
+        padding: 4px 10px;
         border-radius: 4px;
+        font-weight: 700;
         font-size: 0.85rem;
+        color: #7F1D1D;
+        background-color: #FEE2E2;
+        border: 1px solid #FCA5A5;
+    }
+    .status-badge-susceptible {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #065F46;
+        background-color: #D1FAE5;
+        border: 1px solid #6EE7B7;
+    }
+    .status-badge-indeterminate {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #92400E;
+        background-color: #FEF3C7;
+        border: 1px solid #FCD34D;
+    }
+    .mode-badge-live {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #065F46;
+        background-color: #D1FAE5;
+        border: 1px solid #34D399;
+    }
+    .mode-badge-fixture {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #92400E;
+        background-color: #FEF3C7;
+        border: 1px solid #F59E0B;
+    }
+    .clinical-notice {
+        background-color: #F3F4F6;
+        border-left: 5px solid #4B5563;
+        padding: 12px 16px;
+        border-radius: 3px;
+        font-size: 0.85rem;
+        color: #1F2937;
+        margin-top: 1.5rem;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# Header
-st.markdown('<div class="main-header">🛡️ Genome Firewall</div>', unsafe_allow_html=True)
+
+def build_csv_summary(interpretations: List[Dict[str, Any]]) -> str:
+    """Generate a clean CSV summary string of antibiotic interpretation results."""
+    output = io.StringIO()
+    fieldnames = ["Antibiotic", "Drug Class", "Status", "Supporting Evidence", "Rule ID", "Explanation"]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in interpretations:
+        evidence_list = row.get("evidence_genes", [])
+        evidence_str = ", ".join(evidence_list) if isinstance(evidence_list, list) else str(evidence_list)
+        writer.writerow({
+            "Antibiotic": row.get("antibiotic", ""),
+            "Drug Class": row.get("drug_class", ""),
+            "Status": row.get("status", ""),
+            "Supporting Evidence": evidence_str,
+            "Rule ID": row.get("rule_id", ""),
+            "Explanation": row.get("confidence_or_criteria", ""),
+        })
+    return output.getvalue()
+
+
+# 1. Title & Plain-Language Research Prototype Description
+st.title("Genome Firewall — Evidence-Based Antibiotic Resistance Analysis")
 st.markdown(
-    '<div class="sub-header">Bacterial Genome Resistance-Evidence Analysis Prototype & Provenance Auditor</div>',
-    unsafe_allow_html=True,
+    "**Notice:** This application is an exploratory research prototype for resistance-evidence "
+    "analysis from bacterial genome assemblies. It is **not a clinical diagnostic tool** and must not "
+    "be used for therapeutic or clinical decision making. Laboratory antimicrobial susceptibility testing "
+    "(AST) remains necessary to confirm phenotypic resistance profiles."
 )
 
-# Mandatory Clinical Disclaimer
+st.markdown("---")
+
+# 2. Sidebar Inputs: Sample ID, Organism, and Quick-Load Option
+with st.sidebar:
+    st.header("Analysis Inputs")
+    sample_id_input = st.text_input(
+        "Sample Identifier *",
+        value="SAMPLE-001",
+        help="Unique identifier for the bacterial isolate being analyzed (required).",
+    )
+    organism_input = st.text_input(
+        "Bacterial Organism (Optional)",
+        value="",
+        placeholder="e.g. Klebsiella pneumoniae",
+        help="Optional species name. When provided, organism-specific AST rule correlations are evaluated.",
+    )
+
+    st.markdown("---")
+    st.subheader("Reference Demo Datasets")
+    st.caption("Load a bundled benchmark isolate to test the analysis pipeline:")
+    demo_files = {
+        "Klebsiella pneumoniae (KPC-2 Producer)": {
+            "path": os.path.join("data", "demo", "klebsiella_pneumoniae_kpc.fasta"),
+            "organism": "Klebsiella pneumoniae",
+            "sample_id": "KP-KPC-BENCHMARK",
+        },
+        "Staphylococcus aureus (MRSA USA300)": {
+            "path": os.path.join("data", "demo", "staphylococcus_aureus_mrsa.fasta"),
+            "organism": "Staphylococcus aureus",
+            "sample_id": "SA-MRSA-BENCHMARK",
+        },
+        "Escherichia coli (MDR ESBL)": {
+            "path": os.path.join("data", "demo", "escherichia_coli_multidrug.fasta"),
+            "organism": "Escherichia coli",
+            "sample_id": "EC-MDR-BENCHMARK",
+        },
+    }
+
+    selected_demo = st.selectbox("Select Benchmark Isolate:", list(demo_files.keys()))
+    if st.button("Use Selected Benchmark Isolate"):
+        chosen = demo_files[selected_demo]
+        st.session_state["demo_fasta_path"] = chosen["path"]
+        st.session_state["demo_organism"] = chosen["organism"]
+        st.session_state["demo_sample_id"] = chosen["sample_id"]
+        st.success(f"Selected: {selected_demo}")
+
+# Synchronize input state if demo was loaded
+if "demo_sample_id" in st.session_state and sample_id_input == "SAMPLE-001":
+    sample_id_input = st.session_state["demo_sample_id"]
+if "demo_organism" in st.session_state and not organism_input:
+    organism_input = st.session_state["demo_organism"]
+
+# 3. Main Input Area: FASTA/FA/FNA File Upload
+st.subheader("1. Ingest Bacterial Genome Assembly")
+uploaded_file = st.file_uploader(
+    "Upload bacterial genome sequence file (.fasta, .fa, .fna)",
+    type=["fasta", "fa", "fna"],
+    help="Upload assembled contigs or scaffolds in standard nucleotide FASTA format.",
+)
+
+active_fasta_path: Optional[str] = None
+is_temp_file = False
+
+if uploaded_file is not None:
+    # Save uploaded file safely to a temporary file
+    temp_suffix = os.path.splitext(uploaded_file.name)[1]
+    with tempfile.NamedTemporaryFile(delete=False, suffix=temp_suffix) as tmp:
+        tmp.write(uploaded_file.getvalue())
+        active_fasta_path = tmp.name
+        is_temp_file = True
+    st.info(f"File uploaded: **{uploaded_file.name}** ({uploaded_file.size:,} bytes)")
+elif "demo_fasta_path" in st.session_state:
+    demo_p = st.session_state["demo_fasta_path"]
+    if os.path.exists(demo_p):
+        active_fasta_path = demo_p
+        st.info(f"Using reference benchmark isolate: `{os.path.basename(demo_p)}`")
+
+# 4. Analyze Button with Input Validation & Progress Indication
+st.markdown("---")
+analyze_btn = st.button("🔬 Run Evidence Analysis", type="primary", use_container_width=True)
+
+if analyze_btn:
+    # Input validation
+    clean_sample_id = sample_id_input.strip() if sample_id_input else ""
+    if not clean_sample_id:
+        st.error("Validation Error: Please provide a valid Sample Identifier before proceeding.")
+    elif not active_fasta_path or not os.path.isfile(active_fasta_path):
+        st.error("Validation Error: Please upload a FASTA sequence file (.fasta, .fa, .fna) or select a benchmark isolate.")
+    else:
+        with st.spinner("Processing genome assembly, computing QC metrics, and applying explicit resistance rules..."):
+            try:
+                raw_organism = organism_input.strip() if organism_input else None
+                analysis_output = analyze_genome(
+                    fasta_path=active_fasta_path,
+                    sample_id=clean_sample_id,
+                    organism=raw_organism,
+                )
+                st.session_state["latest_analysis"] = analysis_output
+                st.session_state["analyzed_sample_id"] = clean_sample_id
+            except Exception as exc:
+                st.error(f"Unexpected Backend Error during analysis: {str(exc)}")
+                st.session_state["latest_analysis"] = None
+            finally:
+                # Clean up temporary uploaded file if created
+                if is_temp_file and active_fasta_path and os.path.exists(active_fasta_path):
+                    try:
+                        os.remove(active_fasta_path)
+                    except Exception:
+                        pass
+
+# 5. Display Analysis Results
+if st.session_state.get("latest_analysis"):
+    result: Dict[str, Any] = st.session_state["latest_analysis"]
+
+    # Defensive extraction of all schema fields
+    sample_id = result.get("sample_id", "UNKNOWN")
+    organism_val = result.get("organism") or "Not specified"
+    prov: Dict[str, Any] = result.get("provenance", {})
+    metrics: Dict[str, Any] = result.get("genome_metrics", {})
+    interps: List[Dict[str, Any]] = result.get("interpretation", [])
+    evidence: List[Dict[str, Any]] = result.get("detected_evidence", [])
+    disclaimers: List[str] = result.get("disclaimers", [])
+    errors: List[str] = result.get("analysis_errors", [])
+
+    is_live = prov.get("is_live_analysis", False)
+
+    # 8. Honest Engine Mode & Detector/Database Status (Never hide an unavailable detector)
+    st.subheader("2. Detection Engine Audit & Provenance")
+    if is_live:
+        st.markdown('<span class="mode-badge-live">● LIVE ANALYSIS (AMRFinderPlus Engine Active)</span>', unsafe_allow_html=True)
+    else:
+        st.markdown('<span class="mode-badge-fixture">● DEMONSTRATION FIXTURE MODE (Precomputed Reference Data)</span>', unsafe_allow_html=True)
+        st.warning(
+            "**Notice on Engine Availability:** A verified local live AMRFinderPlus installation/database was not found. "
+            "This analysis uses precomputed reference demonstration data to evaluate explicit rules without fabricating live sequence detection.",
+            icon="⚠️",
+        )
+
+    col_meta1, col_meta2, col_meta3 = st.columns(3)
+    with col_meta1:
+        st.write(f"**Sample ID:** `{sample_id}`")
+        st.write(f"**Organism:** {organism_val}")
+        st.write(f"**Input FASTA SHA-256:** `{prov.get('input_sha256') or 'Unavailable'}`")
+    with col_meta2:
+        st.write(f"**Detection Engine:** {prov.get('engine', 'N/A')}")
+        st.write(f"**Engine Version:** `{prov.get('engine_version') or 'N/A'}`")
+        st.write(f"**Database Version:** `{prov.get('database_version') or 'N/A'}`")
+    with col_meta3:
+        st.write(f"**Ruleset Version:** `{prov.get('rules_version', 'N/A')}`")
+        st.write(f"**Analysis Mode:** {'Live Subprocess' if is_live else 'Precomputed Demonstration'}")
+        st.write(f"**Timestamp (UTC):** `{prov.get('timestamp_utc') or 'N/A'}`")
+
+    if prov.get("provenance_notes"):
+        st.caption(f"**Audit Notes:** {prov.get('provenance_notes')}")
+
+    # Display any backend execution errors if present
+    if errors:
+        st.error(f"Backend Analysis Warnings/Errors ({len(errors)}):")
+        for err in errors:
+            st.markdown(f"- `{err}`")
+
+    # 5. Genome Summary: Sequence count, Total length, GC percentage, and Warnings
+    st.markdown("---")
+    st.subheader("3. Genome Metrics & Assembly Quality Control")
+    g_col1, g_col2, g_col3, g_col4 = st.columns(4)
+
+    seq_count = metrics.get("sequence_count", 0)
+    total_len = metrics.get("total_length_bp", 0)
+    gc_pct = metrics.get("gc_content_pct")
+    n50_val = metrics.get("n50_bp", 0)
+
+    g_col1.metric("Sequence / Contig Count", f"{seq_count:,}")
+    g_col2.metric("Total Assembly Length", f"{total_len:,} bp")
+    g_col3.metric("GC Content", f"{gc_pct:.2f}%" if gc_pct is not None else "N/A")
+    g_col4.metric("Contig N50", f"{n50_val:,} bp")
+
+    warnings_list = metrics.get("warnings", [])
+    if warnings_list:
+        st.warning(f"**Assembly QC Warnings ({len(warnings_list)}):**")
+        for w in warnings_list:
+            st.markdown(f"- ⚠️ {w}")
+    else:
+        st.success("No input assembly anomalies detected.")
+
+    # 6 & 7. Antibiotic Interpretation Table with Visible Distinction between Statuses
+    st.markdown("---")
+    st.subheader("4. Antibiotic Susceptibility & Resistance Predictions")
+    st.caption(
+        "Explicit three-state prediction: Resistance predicted, Susceptibility predicted, or Indeterminate. "
+        "Missing resistance evidence does NOT imply susceptibility."
+    )
+
+    if not interps:
+        st.info("No antibiotic interpretation rules were evaluated for this sample.")
+    else:
+        # Status summary tallies
+        n_res = sum(1 for i in interps if i.get("status") == "Resistance predicted")
+        n_sus = sum(1 for i in interps if i.get("status") == "Susceptibility predicted")
+        n_ind = sum(1 for i in interps if i.get("status") == "Indeterminate")
+
+        tally_col1, tally_col2, tally_col3 = st.columns(3)
+        tally_col1.markdown(f"**Resistance Predicted:** `{n_res}`")
+        tally_col2.markdown(f"**Susceptibility Predicted:** `{n_sus}`")
+        tally_col3.markdown(f"**Indeterminate:** `{n_ind}`")
+
+        # Table Display
+        st.markdown("<br/>", unsafe_allow_html=True)
+        for item in interps:
+            abx_name = item.get("antibiotic", "Unknown Drug")
+            drug_class = item.get("drug_class", "Unclassified")
+            status = item.get("status", "Indeterminate")
+            explanation = item.get("confidence_or_criteria", "No explanation provided.")
+            evidence_genes = item.get("evidence_genes", [])
+            rule_id = item.get("rule_id", "N/A")
+
+            # Visible distinction between the 3 statuses
+            if status == "Resistance predicted":
+                badge_html = '<span class="status-badge-resistant">🔴 Resistance predicted</span>'
+            elif status == "Susceptibility predicted":
+                badge_html = '<span class="status-badge-susceptible">🟢 Susceptibility predicted</span>'
+            else:
+                badge_html = '<span class="status-badge-indeterminate">🟡 Indeterminate</span>'
+
+            with st.container():
+                col_drug, col_badge = st.columns([3, 1])
+                with col_drug:
+                    st.markdown(f"**{abx_name}** `({drug_class})`")
+                with col_badge:
+                    st.markdown(badge_html, unsafe_allow_html=True)
+
+                evidence_display = f"**Supporting Evidence:** `{', '.join(evidence_genes)}` | " if evidence_genes else ""
+                st.caption(f"{evidence_display}**Rule ID:** `{rule_id}` — {explanation}")
+                st.markdown("<hr style='margin: 0.2rem 0 0.6rem 0; border: none; border-top: 1px solid #E5E7EB;'/>", unsafe_allow_html=True)
+
+    # Raw Detected AMR Determinants Expandable Section
+    with st.expander(f"View Detected Genomic AMR Determinants ({len(evidence)})", expanded=False):
+        if evidence:
+            determinants_table = []
+            for det in evidence:
+                determinants_table.append({
+                    "Gene Symbol": det.get("gene_symbol", "N/A"),
+                    "Element Class": det.get("class", "N/A"),
+                    "Subclass": det.get("subclass", ""),
+                    "Coverage %": f"{det.get('coverage', 0.0):.1f}%",
+                    "Identity %": f"{det.get('identity', 0.0):.1f}%",
+                    "Location": f"{det.get('contig_id', '')}:{det.get('start', 0)}-{det.get('stop', 0)}",
+                    "Strand": det.get("strand", "+"),
+                })
+            st.dataframe(determinants_table, use_container_width=True)
+        else:
+            st.write("No acquired AMR determinants detected in this assembly.")
+
+    # 9. Download Generated JSON Report and CSV Summary
+    st.markdown("---")
+    st.subheader("5. Auditable Export & Downloads")
+    dl_col1, dl_col2 = st.columns(2)
+
+    # 1. JSON Report
+    json_data = json.dumps(result, indent=2)
+    dl_col1.download_button(
+        label="📥 Download JSON Report",
+        data=json_data,
+        file_name=f"genome_firewall_{sample_id}.json",
+        mime="application/json",
+        use_container_width=True,
+    )
+
+    # 2. CSV Summary
+    csv_data = build_csv_summary(interps)
+    dl_col2.download_button(
+        label="📥 Download CSV Summary",
+        data=csv_data,
+        file_name=f"genome_firewall_{sample_id}_summary.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+
+# Mandatory Clinical Notice & Boundaries
 st.markdown(
     """
-    <div class="disclaimer-box">
-        <strong>⚠️ REGULATORY & CLINICAL DISCLAIMER</strong><br>
-        <strong>RESEARCH USE ONLY:</strong> Genome Firewall is an exploratory hackathon prototype. It is <strong>NOT</strong> clinically validated, 
-        cleared by any diagnostic authority, or a replacement for phenotypic laboratory Antimicrobial Susceptibility Testing (AST). 
-        Predictions reflect algorithmic rule interpretations of assembled genomic sequence evidence.
+    <div class="clinical-notice">
+        <strong>CLINICAL & REGULATORY NOTICE:</strong><br/>
+        Genome Firewall is a research and hackathon demonstration prototype only. It has not been approved or cleared by any regulatory agency for clinical diagnostic procedures, therapeutic guidance, or in vitro diagnostic (IVD) use.<br/>
+        This prototype does <strong>not</strong> substitute for conventional phenotypic antimicrobial susceptibility testing (AST) performed in accredited clinical microbiology laboratories. Genotypic absence of resistance markers must never be interpreted as clinical susceptibility without laboratory confirmation.
     </div>
     """,
     unsafe_allow_html=True,
 )
-
-# Load Demo Catalog
-DEMO_CATALOG_PATH = os.path.join("data", "demo", "catalog.json")
-demo_catalog = {"fixtures": []}
-if os.path.exists(DEMO_CATALOG_PATH):
-    try:
-        with open(DEMO_CATALOG_PATH, "r", encoding="utf-8") as f:
-            demo_catalog = json.load(f)
-    except Exception:
-        pass
-
-# Sidebar configuration
-with st.sidebar:
-    st.header("🧬 Sample Configuration")
-
-    input_mode = st.radio(
-        "Choose Input Source",
-        ["Vetted Demonstration Genome", "Upload FASTA/FA/FNA"],
-        index=0,
-    )
-
-    selected_fasta_path = None
-    sample_id = "SAMPLE-01"
-    organism = None
-
-    if input_mode == "Vetted Demonstration Genome":
-        fixtures = demo_catalog.get("fixtures", [])
-        if fixtures:
-            fixture_options = {
-                f"{f['id']} - {f['name']}": f for f in fixtures
-            }
-            selected_label = st.selectbox(
-                "Select Benchmark Demo Genome",
-                list(fixture_options.keys()),
-            )
-            selected_fixture = fixture_options[selected_label]
-            selected_fasta_path = os.path.join("data", "demo", selected_fixture["filename"])
-            sample_id = selected_fixture["id"]
-            organism = selected_fixture["organism"]
-
-            st.caption(f"**Species**: *{organism}*")
-            st.info(f"**Profile**: {selected_fixture['description']}")
-        else:
-            st.error("Demo catalog not found in `data/demo/catalog.json`.")
-
-    else:
-        uploaded_file = st.file_uploader(
-            "Upload Assembled Bacterial Genome",
-            type=["fasta", "fa", "fna"],
-            help="Accepts assembled contigs in standard FASTA format.",
-        )
-        sample_id = st.text_input("Sample Identifier", value="CUSTOM-ISOLATE-01")
-        organism_choice = st.selectbox(
-            "Organism (Species Context)",
-            [
-                "Klebsiella pneumoniae",
-                "Escherichia coli",
-                "Staphylococcus aureus",
-                "Pseudomonas aeruginosa",
-                "Acinetobacter baumannii",
-                "Other / Unknown",
-            ],
-            index=0,
-        )
-        if organism_choice == "Other / Unknown":
-            organism = st.text_input("Custom Species Name (optional)", value="")
-        else:
-            organism = organism_choice
-
-        if uploaded_file is not None:
-            # Save uploaded file to a temporary file
-            t_suffix = os.path.splitext(uploaded_file.name)[1] or ".fasta"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=t_suffix) as tmp_file:
-                tmp_file.write(uploaded_file.getvalue())
-                selected_fasta_path = tmp_file.name
-
-    st.markdown("---")
-    st.markdown("### ⚖️ Rules Engine v1.0.0")
-    st.caption(
-        "Interprets AMR determinants into strict tripartite statuses: "
-        "`Resistance predicted`, `Susceptibility predicted`, or `Indeterminate`. "
-        "Missing resistance evidence **never** implies susceptibility by default."
-    )
-
-# Execution trigger
-if selected_fasta_path:
-    col_btn, _ = st.columns([2, 5])
-    with col_btn:
-        run_analysis = st.button("🚀 Run Resistance Analysis", type="primary", use_container_width=True)
-
-    if run_analysis:
-        with st.spinner("Inspecting genome metrics, querying AMR evidence, and evaluating rules..."):
-            try:
-                # Call ONLY the agreed public backend function
-                result = analyze_genome(
-                    fasta_path=selected_fasta_path,
-                    sample_id=sample_id,
-                    organism=organism if organism else None,
-                )
-                st.session_state["analysis_result"] = result
-            except Exception as exc:
-                st.session_state["analysis_error"] = str(exc)
-                if "analysis_result" in st.session_state:
-                    del st.session_state["analysis_result"]
-
-# Display Error if any
-if "analysis_error" in st.session_state and "analysis_result" not in st.session_state:
-    err_msg = st.session_state["analysis_error"]
-    st.error(f"❌ Analysis Execution Error: {err_msg}")
-    if "AMRFinderPlus" in err_msg or "precomputed" in err_msg.lower():
-        st.warning(
-            "💡 **Help**: Live NCBI AMRFinderPlus is not installed in this environment. "
-            "To evaluate custom unmapped FASTA genomes, configure AMRFinderPlus and its database. "
-            "To view the full pipeline in action, select one of the vetted demonstration genomes from the sidebar."
-        )
-
-# Display Results
-if "analysis_result" in st.session_state:
-    result = st.session_state["analysis_result"]
-    prov = result.get("provenance", {})
-    metrics = result.get("genome_metrics", {})
-    interps = result.get("interpretations", [])
-    detections = result.get("detections", [])
-    summary = result.get("summary", {})
-
-    # Engine & Mode Banner
-    if prov.get("is_live"):
-        st.markdown(
-            f"""
-            <div class="mode-live-box">
-                <strong>🟢 LIVE DETECTION ENGINE ACTIVE</strong>: Analysis executed using live 
-                <code>{prov.get('engine')}</code> (Version: <code>{prov.get('engine_version')}</code>, 
-                DB: <code>{prov.get('database_version')}</code>).
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            f"""
-            <div class="mode-fixture-box">
-                <strong>⚠️ PRECOMPUTED DEMONSTRATION FIXTURE</strong>: {prov.get('mode_label')}.<br>
-                <em>Findings are strictly derived from benchmark reference fixtures and not from live tool execution. 
-                Live AMRFinderPlus is not present on this host.</em>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    # Executive Summary Metrics
-    st.subheader("1. Executive Summary")
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    with kpi1:
-        st.metric("Total Antibiotics Evaluated", summary.get("total_antibiotics_evaluated", 0))
-    with kpi2:
-        st.metric("Resistance Predicted", summary.get("resistant_count", 0))
-    with kpi3:
-        st.metric("Susceptibility Predicted", summary.get("susceptible_count", 0))
-    with kpi4:
-        st.metric("Indeterminate Status", summary.get("indeterminate_count", 0))
-
-    # Provenance and Genome QC side-by-side
-    st.subheader("2. Provenance & Genome Assembly QC")
-    col_prov, col_qc = st.columns(2)
-
-    with col_prov:
-        st.markdown("##### 🏷️ Provenance & Audit Trail")
-        st.markdown(f"- **Sample ID**: `{prov.get('sample_id')}`")
-        st.markdown(f"- **Organism Context**: *{prov.get('organism')}*")
-        st.markdown(f"- **SHA-256 Hash**: <span class='prov-code'>{prov.get('input_sha256')}</span>", unsafe_allow_html=True)
-        st.markdown(f"- **Engine**: `{prov.get('engine')}`")
-        st.markdown(f"- **Engine Version**: `{prov.get('engine_version')}`")
-        st.markdown(f"- **Database Version**: `{prov.get('database_version')}`")
-        st.markdown(f"- **Rules Specification**: v`{prov.get('rules_version')}`")
-        st.markdown(f"- **Timestamp (UTC)**: `{prov.get('timestamp_utc')}`")
-
-    with col_qc:
-        st.markdown("##### 🔬 Genome Assembly Metrics")
-        st.markdown(f"- **Contigs / Sequences**: `{metrics.get('sequence_count')}`")
-        st.markdown(f"- **Total Length**: `{metrics.get('total_length', 0):,} bp`")
-        gc_str = f"{metrics.get('gc_content_pct')}%" if metrics.get("gc_content_pct") is not None else "N/A"
-        st.markdown(f"- **GC Content**: `{gc_str}`")
-        st.markdown(f"- **Assembly N50**: `{metrics.get('n50', 0):,} bp`")
-
-        warnings = metrics.get("warnings", [])
-        if warnings:
-            st.warning("⚠️ **Assembly Quality Warnings**:\n" + "\n".join([f"- {w}" for w in warnings]))
-        else:
-            st.success("✅ Assembly quality checks passed. No input warnings.")
-
-    # Antibiotic Susceptibility Table
-    st.subheader("3. Antibiotic Susceptibility Interpretations")
-    st.caption("Each antibiotic is categorized strictly into one of three statuses based on explicit rules.")
-
-    filter_status = st.selectbox(
-        "Filter by Prediction Status",
-        ["All", "Resistance predicted", "Susceptibility predicted", "Indeterminate"],
-        index=0,
-    )
-
-    filtered_interps = interps
-    if filter_status != "All":
-        filtered_interps = [i for i in interps if i["status"] == filter_status]
-
-    if filtered_interps:
-        table_rows = []
-        for item in filtered_interps:
-            status_val = item["status"]
-            if status_val == "Resistance predicted":
-                badge_html = f"<span class='status-resistant'>{status_val}</span>"
-            elif status_val == "Susceptibility predicted":
-                badge_html = f"<span class='status-susceptible'>{status_val}</span>"
-            else:
-                badge_html = f"<span class='status-indeterminate'>{status_val}</span>"
-
-            evidence_str = "; ".join(item.get("evidence", [])) or "None"
-            table_rows.append({
-                "Antibiotic": item.get("antibiotic"),
-                "Drug Class": item.get("drug_class"),
-                "Status": status_val,
-                "Rule ID": item.get("rule_id"),
-                "Rationale": item.get("rationale"),
-                "Evidence": evidence_str,
-            })
-
-        df_interps = pd.DataFrame(table_rows)
-        st.dataframe(
-            df_interps,
-            column_config={
-                "Antibiotic": st.column_config.TextColumn("Antibiotic", width="medium"),
-                "Drug Class": st.column_config.TextColumn("Class", width="medium"),
-                "Status": st.column_config.TextColumn("Prediction Status", width="medium"),
-                "Rule ID": st.column_config.TextColumn("Rule ID", width="small"),
-                "Rationale": st.column_config.TextColumn("Evidence Rationale", width="large"),
-                "Evidence": st.column_config.TextColumn("Matched Determinants", width="medium"),
-            },
-            hide_index=True,
-            use_container_width=True,
-        )
-    else:
-        st.info(f"No antibiotics match the filter '{filter_status}'.")
-
-    # Raw Detected AMR Determinants
-    st.subheader("4. Detected AMR Determinants (Raw Tool Output)")
-    if detections:
-        det_rows = []
-        for d in detections:
-            det_rows.append({
-                "Gene Symbol": d.get("gene_symbol"),
-                "Sequence / Contig": d.get("sequence_name"),
-                "Element Type": d.get("element_type"),
-                "Class": d.get("class"),
-                "Subclass": d.get("subclass"),
-                "Method": d.get("method"),
-                "Identity (%)": f"{d.get('identity')}%",
-                "Coverage (%)": f"{d.get('coverage')}%",
-            })
-        df_det = pd.DataFrame(det_rows)
-        st.dataframe(df_det, hide_index=True, use_container_width=True)
-    else:
-        st.info("No acquired resistance genes or known resistance mutations detected.")
-
-    # Download Reports
-    st.subheader("5. Export & Audit Trail Downloads")
-    reports = result.get("reports", {})
-    json_data = reports.get("json", json.dumps(result, indent=2))
-    md_data = reports.get("markdown", "# Genome Firewall Report\n")
-    csv_data = reports.get("csv", "")
-
-    down_col1, down_col2, down_col3 = st.columns(3)
-    with down_col1:
-        st.download_button(
-            label="📥 Download JSON Report",
-            data=json_data,
-            file_name=f"{prov.get('sample_id', 'sample')}_report.json",
-            mime="application/json",
-            use_container_width=True,
-        )
-    with down_col2:
-        st.download_button(
-            label="📄 Download Markdown Report",
-            data=md_data,
-            file_name=f"{prov.get('sample_id', 'sample')}_report.md",
-            mime="text/markdown",
-            use_container_width=True,
-        )
-    with down_col3:
-        st.download_button(
-            label="📊 Download CSV Predictions",
-            data=csv_data,
-            file_name=f"{prov.get('sample_id', 'sample')}_predictions.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-
-# Documentation / Rules Viewer Expander
-with st.expander("📖 Explicit Rules Engine Specification (v1.0.0)"):
-    st.markdown(
-        """
-        ### Interpretation Logic & Rationale
-        Genome Firewall applies explicit, verified rules to evaluate genomic evidence:
-        
-        1. **Strict Tripartite Classification**:
-           - **Resistance predicted**: High-confidence detection (≥90% identity, ≥80% coverage) of a verified resistance determinant, or established intrinsic species resistance.
-           - **Susceptibility predicted**: Allowed **only** when the organism is fully characterized, assembly quality passes without critical warnings, all known resistance mechanisms for that drug class are covered, and zero resistance markers are detected.
-           - **Indeterminate**: Assigned when the organism is uncharacterized, assembly has quality warnings, resistance mechanisms cannot be ruled out from gene absence alone (e.g. Colistin *mcr* vs chromosomal *mgrB*), or rules are unverified.
-        
-        2. **Absence of Evidence is NOT Evidence of Absence**:
-           - The absence of a detected resistance gene **never** automatically marks an antibiotic as susceptible.
-           - Example: Missing *mcr-1* does **not** confer susceptibility to Colistin, because chromosomal mutations (*pmrA/B*, *mgrB*) are frequent and cannot be ruled out without phenotypic AST.
-        """
-    )

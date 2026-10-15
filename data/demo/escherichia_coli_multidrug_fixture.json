@@ -1,0 +1,69 @@
+{
+  "engine": "AMRFinderPlus (Demonstration Reference Fixture)",
+  "engine_version": "3.12.8-fixture",
+  "database_version": "2024-05-02.1-ref",
+  "is_live_analysis": false,
+  "provenance_notes": "Demonstration reference fixture for Escherichia coli (MDR ESBL producer). Derived from verified NCBI reference data. Not live output.",
+  "detected_evidence": [
+    {
+      "gene_symbol": "blaCTX-M-14",
+      "element_type": "AMR",
+      "class": "BETA-LACTAM",
+      "subclass": "CEPHALOSPORIN",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_01",
+      "start": 5400,
+      "stop": 6275,
+      "strand": "+"
+    },
+    {
+      "gene_symbol": "blaTEM-1",
+      "element_type": "AMR",
+      "class": "BETA-LACTAM",
+      "subclass": "PENICILLIN",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_01",
+      "start": 12100,
+      "stop": 12960,
+      "strand": "-"
+    },
+    {
+      "gene_symbol": "qnrS1",
+      "element_type": "AMR",
+      "class": "QUINOLONE",
+      "subclass": "PMQR",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_02",
+      "start": 4120,
+      "stop": 4776,
+      "strand": "+"
+    },
+    {
+      "gene_symbol": "tet(B)",
+      "element_type": "AMR",
+      "class": "TETRACYCLINE",
+      "subclass": "TETRACYCLINE",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_02",
+      "start": 8900,
+      "stop": 10105,
+      "strand": "-"
+    },
+    {
+      "gene_symbol": "aac(3)-IId",
+      "element_type": "AMR",
+      "class": "AMINOGLYCOSIDE",
+      "subclass": "AMINOGLYCOSIDE",
+      "coverage": 100.0,
+      "identity": 99.5,
+      "contig_id": "contig_03",
+      "start": 2100,
+      "stop": 2960,
+      "strand": "+"
+    }
+  ]
+}

@@ -24,7 +24,7 @@
       "name": "Staphylococcus aureus USA300 (MRSA)",
       "organism": "Staphylococcus aureus",
       "filename": "staphylococcus_aureus_mrsa_demo.fasta",
-      "fixture_file": "staphylococcus_aureus_mrsa_fixture.json",
+      "fixture_file": "staphylococcus_aureus_mrsa_demo_fixture.json",
       "sha256": "2e60fff163c603f5da860f0a7cb7cf5940b2762390ad29e870754d4b801986f0",
       "description": "Methicillin-resistant S. aureus USA300 carrying SCCmec IV cassette (mecA PBP2a), blaZ, and erm(A)."
     },
@@ -36,6 +36,33 @@
       "fixture_file": "escherichia_coli_wt_susceptible_fixture.json",
       "sha256": "347d83fdd9021f535ae74be7ff3bdf3238a7af50007690a5310768cc7cdae17f",
       "description": "Wild-type reference genome with zero acquired resistance determinants or known resistance mutations."
+    },
+    {
+      "id": "KP-KPC-BENCHMARK",
+      "name": "Klebsiella pneumoniae (KPC-2 Producer)",
+      "organism": "Klebsiella pneumoniae",
+      "filename": "klebsiella_pneumoniae_kpc.fasta",
+      "fixture_file": "klebsiella_pneumoniae_kpc_fixture.json",
+      "sha256": "fcc0cea80c91286d02752b568df2ab1139223c0a2705033e6c71acf719ad0da3",
+      "description": "Demonstration reference fixture for Klebsiella pneumoniae (ST258 KPC producer)."
+    },
+    {
+      "id": "SA-MRSA-BENCHMARK",
+      "name": "Staphylococcus aureus (MRSA USA300)",
+      "organism": "Staphylococcus aureus",
+      "filename": "staphylococcus_aureus_mrsa.fasta",
+      "fixture_file": "staphylococcus_aureus_mrsa_fixture.json",
+      "sha256": "1b3e12f8e83781a697ca5b6c59007f31e13fa7415dce45aa912e839157a684d6",
+      "description": "Demonstration reference fixture for Staphylococcus aureus (MRSA USA300 profile)."
+    },
+    {
+      "id": "EC-MDR-BENCHMARK",
+      "name": "Escherichia coli (MDR ESBL)",
+      "organism": "Escherichia coli",
+      "filename": "escherichia_coli_multidrug.fasta",
+      "fixture_file": "escherichia_coli_multidrug_fixture.json",
+      "sha256": "d442e8ef76013a7820c7dc60b836a094b72d1be0f8867aa40337093ebcd4af2d",
+      "description": "Demonstration reference fixture for Escherichia coli (MDR ESBL producer)."
     }
   ]
 }

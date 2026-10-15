@@ -48,7 +48,9 @@ def create_provenance(
         "database_version": database_version or "Unknown",
         "rules_version": rules_version,
         "is_live": is_live,
+        "is_live_analysis": is_live,
         "mode_label": mode_label,
+        "provenance_notes": mode_label,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
     }
 

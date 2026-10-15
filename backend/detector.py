@@ -279,14 +279,24 @@ def run_detection(
         with open(fixture_json_path, "r", encoding="utf-8") as f:
             fixture_data = json.load(f)
 
-        # Standardize detections to ensure raw_evidence exists
+        # Standardize detections to ensure raw_evidence, contig_id, and sequence_name exist
         normalized_detections = []
-        for d in fixture_data.get("detections", []):
+        raw_dets = fixture_data.get("detections") or fixture_data.get("detected_evidence") or []
+        for d in raw_dets:
             d_copy = dict(d)
+            seq_name = d_copy.get("sequence_name") or d_copy.get("contig_id") or "contig_01"
+            d_copy["sequence_name"] = seq_name
+            d_copy["contig_id"] = seq_name
+            d_copy["start"] = d_copy.get("start", 0)
+            d_copy["stop"] = d_copy.get("stop", 0)
+            d_copy["strand"] = d_copy.get("strand", "+")
             if "raw_evidence" not in d_copy:
                 d_copy["raw_evidence"] = {
                     "source": "precomputed_reference_fixture",
                     "fixture_sample_id": matched_entry.get("id"),
+                    "start": d_copy["start"],
+                    "stop": d_copy["stop"],
+                    "strand": d_copy["strand"],
                 }
             normalized_detections.append(d_copy)
 

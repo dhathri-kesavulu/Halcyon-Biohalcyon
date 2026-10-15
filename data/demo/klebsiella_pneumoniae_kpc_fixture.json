@@ -1,0 +1,81 @@
+{
+  "engine": "AMRFinderPlus (Demonstration Reference Fixture)",
+  "engine_version": "3.12.8-fixture",
+  "database_version": "2024-05-02.1-ref",
+  "is_live_analysis": false,
+  "provenance_notes": "Demonstration reference fixture for Klebsiella pneumoniae (ST258 KPC producer). Derived from verified NCBI AMR profiles. Not live output.",
+  "detected_evidence": [
+    {
+      "gene_symbol": "blaKPC-2",
+      "element_type": "AMR",
+      "class": "BETA-LACTAM",
+      "subclass": "CARBAPENEM",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_01",
+      "start": 12450,
+      "stop": 13331,
+      "strand": "+"
+    },
+    {
+      "gene_symbol": "blaCTX-M-15",
+      "element_type": "AMR",
+      "class": "BETA-LACTAM",
+      "subclass": "CEPHALOSPORIN",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_01",
+      "start": 25890,
+      "stop": 26765,
+      "strand": "+"
+    },
+    {
+      "gene_symbol": "blaSHV-11",
+      "element_type": "AMR",
+      "class": "BETA-LACTAM",
+      "subclass": "PENICILLIN",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_02",
+      "start": 89400,
+      "stop": 90260,
+      "strand": "-"
+    },
+    {
+      "gene_symbol": "aac(6')-Ib-cr",
+      "element_type": "AMR",
+      "class": "AMINOGLYCOSIDE",
+      "subclass": "AMINOGLYCOSIDE/QUINOLONE",
+      "coverage": 100.0,
+      "identity": 99.8,
+      "contig_id": "contig_03",
+      "start": 10420,
+      "stop": 11019,
+      "strand": "+"
+    },
+    {
+      "gene_symbol": "fosA",
+      "element_type": "AMR",
+      "class": "FOSFOMYCIN",
+      "subclass": "FOSFOMYCIN",
+      "coverage": 100.0,
+      "identity": 99.3,
+      "contig_id": "contig_02",
+      "start": 145000,
+      "stop": 145419,
+      "strand": "+"
+    },
+    {
+      "gene_symbol": "oqxA",
+      "element_type": "AMR",
+      "class": "QUINOLONE",
+      "subclass": "EFFLUX",
+      "coverage": 100.0,
+      "identity": 100.0,
+      "contig_id": "contig_02",
+      "start": 210400,
+      "stop": 211575,
+      "strand": "-"
+    }
+  ]
+}
