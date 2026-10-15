@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "fixtures": [
+    {
+      "id": "KP-KPC2-MDR",
+      "name": "Klebsiella pneumoniae ST258 (MDR / Carbapenem-resistant)",
+      "organism": "Klebsiella pneumoniae",
+      "filename": "klebsiella_pneumoniae_kpc2_demo.fasta",
+      "fixture_file": "klebsiella_pneumoniae_kpc2_fixture.json",
+      "sha256": "bc2685aca5213b50af299ba04ba7fcb6d6295afaa2cd99fcdc05b29d9abdbf6d",
+      "description": "High-risk nosocomial ST258 lineage carrying blaKPC-2 carbapenemase, blaCTX-M-15 ESBL, aac(6')-Ib-cr, sul1, tet(A), oqxA/B, and intrinsic blaSHV-11."
+    },
+    {
+      "id": "EC-CTXM-ESBL",
+      "name": "Escherichia coli ST131 (ESBL / Ciprofloxacin-resistant)",
+      "organism": "Escherichia coli",
+      "filename": "escherichia_coli_ctxm14_demo.fasta",
+      "fixture_file": "escherichia_coli_ctxm14_fixture.json",
+      "sha256": "9ed5a96cde4afcc2d10f366f950fd917cd2e15502d97eb812d012eda65ea1329",
+      "description": "Prevalent extraintestinal pathogenic E. coli carrying blaCTX-M-14, blaTEM-1B, aac(3)-IIa, and chromosomal gyrA_S83L and parC_S80I mutations."
+    },
+    {
+      "id": "SA-MRSA-USA300",
+      "name": "Staphylococcus aureus USA300 (MRSA)",
+      "organism": "Staphylococcus aureus",
+      "filename": "staphylococcus_aureus_mrsa_demo.fasta",
+      "fixture_file": "staphylococcus_aureus_mrsa_fixture.json",
+      "sha256": "2e60fff163c603f5da860f0a7cb7cf5940b2762390ad29e870754d4b801986f0",
+      "description": "Methicillin-resistant S. aureus USA300 carrying SCCmec IV cassette (mecA PBP2a), blaZ, and erm(A)."
+    },
+    {
+      "id": "EC-WT-SUSCEPTIBLE",
+      "name": "Escherichia coli K-12 MG1655 (Wild-type Pan-susceptible)",
+      "organism": "Escherichia coli",
+      "filename": "escherichia_coli_wt_susceptible_demo.fasta",
+      "fixture_file": "escherichia_coli_wt_susceptible_fixture.json",
+      "sha256": "347d83fdd9021f535ae74be7ff3bdf3238a7af50007690a5310768cc7cdae17f",
+      "description": "Wild-type reference genome with zero acquired resistance determinants or known resistance mutations."
+    }
+  ]
+}
